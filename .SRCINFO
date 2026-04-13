@@ -1,7 +1,7 @@
 pkgbase = aur-easy
 	pkgdesc = Simple and minimal AUR helper
 	pkgver = 1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/user14923929/aur-easy
 	arch = any
 	license = MIT

@@ -5,38 +5,101 @@ set -e
 CACHE_DIR="$HOME/.cache/aur-easy"
 mkdir -p "$CACHE_DIR"
 
+# --- UTILS ---
+
+function resolve_url() {
+    INPUT="$1"
+
+    if [[ "$INPUT" == *.git ]]; then
+        echo "$INPUT"
+    else
+        echo "https://aur.archlinux.org/${INPUT}.git"
+    fi
+}
+
+# --- CORE ---
+
 function install_pkg() {
-    URL="$1"
+    URL=$(resolve_url "$1")
     NAME=$(basename "$URL" .git)
     DIR="$CACHE_DIR/$NAME"
 
-    echo "[*] Cloning $NAME..."
+    echo "[*] Installing: $NAME"
+    echo "[*] Source: $URL"
+
     rm -rf "$DIR"
     git clone "$URL" "$DIR"
 
     cd "$DIR"
 
-    echo "[*] Building $NAME..."
+    # --- PKGBUILD editing ---
+    read -p "[?] Edit PKGBUILD before build? (Recommended) [y/N]: " EDIT
+
+    if [[ "$EDIT" =~ ^[Yy]$ ]]; then
+        nano PKGBUILD
+    fi
+
+    echo "[*] Building package..."
     makepkg -si --noconfirm
+
+    echo "[✓] Installed: $NAME"
 }
 
 function update_all() {
+    ensure_deps
+
     echo "[*] Updating system..."
     sudo pacman -Syu
+
+    echo "[*] Updating AUR packages from cache..."
+
+    for dir in "$CACHE_DIR"/*; do
+        if [[ -d "$dir" ]]; then
+            cd "$dir"
+
+            echo "[*] Updating $(basename "$dir")..."
+            git pull
+
+            makepkg -si --noconfirm
+        fi
+    done
+
+    echo "[✓] System fully updated"
 }
 
 function remove_pkg() {
     PKG="$1"
+
+    if [[ -z "$PKG" ]]; then
+        echo "[!] No package specified"
+        exit 1
+    fi
+
     echo "[*] Removing $PKG..."
     sudo pacman -Rns "$PKG"
+
+    echo "[✓] Removed: $PKG"
 }
 
 function clean_cache() {
     echo "[*] Cleaning cache..."
     rm -rf "$CACHE_DIR"/*
+    echo "[✓] Cache cleaned"
+}
+
+function show_help() {
+    echo "aur-easy - minimal AUR helper"
+    echo
+    echo "Usage:"
+    echo "  aur-easy -i <pkg|git_url>   Install AUR package"
+    echo "  aur-easy -u                 Update system + AUR"
+    echo "  aur-easy -r <pkg>           Remove package"
+    echo "  aur-easy -c                 Clean cache"
+    echo "  aur-easy -h                 Show this help"
 }
 
 # --- ARG PARSER ---
+
 case "$1" in
     -i)
         install_pkg "$2"
@@ -50,11 +113,10 @@ case "$1" in
     -c)
         clean_cache
         ;;
+    -h|--help)
+        show_help
+        ;;
     *)
-        echo "Usage:"
-        echo "  aur-easy -i <git_url>"
-        echo "  aur-easy -u"
-        echo "  aur-easy -r <pkg>"
-        echo "  aur-easy -c"
+        show_help
         ;;
 esac
