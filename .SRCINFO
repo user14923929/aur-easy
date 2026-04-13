@@ -1,0 +1,13 @@
+pkgbase = aur-easy
+	pkgdesc = Simple and minimal AUR helper
+	pkgver = 1.0
+	pkgrel = 1
+	url = https://github.com/YOUR_USERNAME/aur-easy
+	arch = any
+	license = MIT
+	depends = git
+	depends = base-devel
+	source = aur-easy
+	sha256sums = SKIP
+
+pkgname = aur-easy

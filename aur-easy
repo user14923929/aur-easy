@@ -1,0 +1,60 @@
+#!/bin/bash
+
+set -e
+
+CACHE_DIR="$HOME/.cache/aur-easy"
+mkdir -p "$CACHE_DIR"
+
+function install_pkg() {
+    URL="$1"
+    NAME=$(basename "$URL" .git)
+    DIR="$CACHE_DIR/$NAME"
+
+    echo "[*] Cloning $NAME..."
+    rm -rf "$DIR"
+    git clone "$URL" "$DIR"
+
+    cd "$DIR"
+
+    echo "[*] Building $NAME..."
+    makepkg -si --noconfirm
+}
+
+function update_all() {
+    echo "[*] Updating system..."
+    sudo pacman -Syu
+}
+
+function remove_pkg() {
+    PKG="$1"
+    echo "[*] Removing $PKG..."
+    sudo pacman -Rns "$PKG"
+}
+
+function clean_cache() {
+    echo "[*] Cleaning cache..."
+    rm -rf "$CACHE_DIR"/*
+}
+
+# --- ARG PARSER ---
+case "$1" in
+    -i)
+        install_pkg "$2"
+        ;;
+    -u)
+        update_all
+        ;;
+    -r)
+        remove_pkg "$2"
+        ;;
+    -c)
+        clean_cache
+        ;;
+    *)
+        echo "Usage:"
+        echo "  aur-easy -i <git_url>"
+        echo "  aur-easy -u"
+        echo "  aur-easy -r <pkg>"
+        echo "  aur-easy -c"
+        ;;
+esac
